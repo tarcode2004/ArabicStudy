@@ -32,16 +32,28 @@ const App: React.FC = () => {
       };
     }, [playing]);
 
+    const play = async() => {
+      await setPlaying(true);
+      console.log(playing);
+    }
+
+    const stop = async () => {
+      await setPlaying(false);
+      await setFirstCall(true);
+      console.log(playing);
+    }
+
     const generateAndSpeak = async () => {
-      if (!playing || !apiKey) return;
+      while (playing === true) {
+      if (!apiKey) return;
   
-      const promptText = firstCall?
-       `Generate a sentence in arabic using the following words, you may use other arabic words. They should be sentences someone would use in daily life. Only return a JSON with the arabic sentence and english translation. Don't say anything else. The JSON should be in the follwing format: {arabic: "", english: ""} with the following words ${array[Math.floor(Math.random() * array.length)]} and ${array[Math.floor(Math.random() * array.length)]}.` :
-       `Generate another with the ${array[Math.floor(Math.random() * array.length)]} and ${array[Math.floor(Math.random() * array.length)]}.`
+      let promptText = firstCall?
+       `Generate a sentence in arabic using the following words, you may use other arabic words. They should be sentences someone would use in daily life. Only return an arabic sentence and english translation. Don't say anything else. It should be in the follwing format: {"arabic": "", "english": ""} with the following words ${array[Math.floor(Math.random() * array.length)]} and ${array[Math.floor(Math.random() * array.length)]}.` :
+       `Generate another in the same format without any comentary with the words ${array[Math.floor(Math.random() * array.length)]} and ${array[Math.floor(Math.random() * array.length)]}.`
   
+      let response;
       try {
-        if (playing) {
-          const response = await axios.post('https://api.openai.com/v1/chat/completions', {
+          response = await axios.post('https://api.openai.com/v1/chat/completions', {
               model: "gpt-3.5-turbo",
               messages: [
                   {
@@ -59,31 +71,53 @@ const App: React.FC = () => {
                   'Authorization': `Bearer ${apiKey}`
               }
           });
-  
-          const data = response.data;
-          // Assuming the response format fits the expected JSON structure you provided.
-          // You may need to adjust the parsing logic based on the actual response format.
-          const { arabic, english } = JSON.parse(data.choices[0].message.content);
-          setGeneratedSentence({ arabic, english });
-          await speakText(arabic, 'ar');
-          await speakText(english, 'en');
-  
-          // After the first call, set firstCall to false
-          if (firstCall) setFirstCall(false);
+        }
+        catch (error) {
+          console.error('Error:', error);
+          promptText = `Regenerate in the follwing format, do not make any comentary: {"arabic": "", "english": ""}`
+          try {
+            response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                model: "gpt-3.5-turbo",
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a helpful assistant."
+                    },
+                    {
+                        role: "user",
+                        content: promptText
+                    }
+                ],
+            }, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                }
+            });
+          }
+          catch (error) {
+            console.error('Error:', error);
+            return;
+          }
         }
   
-      } catch (error) {
-          console.error('Error:', error);
+      const data = response.data;
+      console.log(data.choices[0].message.content);
+      // Assuming the response format fits the expected JSON structure you provided.
+      // You may need to adjust the parsing logic based on the actual response format.
+      const { arabic, english } = JSON.parse(data.choices[0].message.content);
+      setGeneratedSentence({ arabic, english });
+      await speakText(arabic, 'ar');
+      await speakText(english, 'en');
+
+      // After the first call, set firstCall to false
+      if (firstCall) setFirstCall(false);
+      await waitThreeSeconds(5);
       }
-  
-      // If still playing, generate another sentence
-      if (playing) {
-          await waitThreeSeconds();
-          generateAndSpeak();
-      }
-  };
+  }; //End of generateAndSpeak
 
   const speakText = (text: string, lang: string) => {
+    if (playing === false) return;
     return new Promise<void>((resolve) => {
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
@@ -93,33 +127,35 @@ const App: React.FC = () => {
 
 };
 
-    return (
+  return (
+    <div>
       <div>
-        <div>
-          <p>OpenAI API Key:</p>
-          <input 
-              type="text" 
-              value={apiKey || ''} 
-              onChange={(e) => setApiKey(e.target.value)} 
-              placeholder="Enter your OpenAI API key" 
-          />
-        </div>
-        <button id="playButton" onClick={() => setPlaying(true)}>Play</button>
-        <button id="pauseButton" onClick={() => setPlaying(false)}>Pause</button>
-        {/* Display the generated sentence */}
-      <p style={{ fontSize: '30px' }}>{generatedSentence.arabic}</p>
-      <p style={{ fontSize: '20px' }}>{generatedSentence.english}</p>
+        <p>OpenAI API Key:</p>
+        <input 
+            id="apiKeyInput"
+            type="text" 
+            value={apiKey || ''} 
+            onChange={(e) => setApiKey(e.target.value)} 
+            placeholder="Enter your OpenAI API key" 
+        />
       </div>
-    );
+      <button id="playButton" onClick={() => play()}>Play</button>
+      <button id="pauseButton" onClick={() => stop()}>Pause</button>
+      {/* Display the generated sentence */}
+    <p style={{ fontSize: '30px' }}>{generatedSentence.arabic}</p>
+    <p style={{ fontSize: '20px' }}>{generatedSentence.english}</p>
+    </div>
+  );
 };
 
 export default App;
-function waitThreeSeconds() {
+
+function waitThreeSeconds(time: number = 3000): Promise<void>{
   return new Promise(resolve => {
     setTimeout(() => {
-        console.log("3 seconds have passed!"); 
+        console.log(`${time} time seconds have passed!`); 
         resolve();
-      }, 3000); // Timeout in milliseconds
+      }, time*1000); // Timeout in milliseconds
   });
 }
 
