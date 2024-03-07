@@ -125,27 +125,46 @@ const App: React.FC = () => {
         speechSynthesis.speak(utterance);
     });
 
-};
+  };
+
+  // Style for the buttons, to keep consistency and avoid repetition
+  const buttonStyle = {
+    marginRight: '10px', // Space between buttons
+    padding: '10px 20px', // Padding inside the buttons
+    border: 'none', // Remove default border
+    borderRadius: '5px', // Curved corners for buttons
+    cursor: 'pointer', // Change cursor to pointer on hover
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2)', // Optional: adds a subtle shadow
+  };
 
   return (
-    <div>
-      <div>
-        <p>OpenAI API Key:</p>
-        <input 
-            id="apiKeyInput"
-            type="text" 
-            value={apiKey || ''} 
-            onChange={(e) => setApiKey(e.target.value)} 
-            placeholder="Enter your OpenAI API key" 
-        />
+    <div style={{
+      backgroundColor: 'lightgreen', // Set the background color to light green
+      height: '100vh', // Set the height to fill the screen
+      width: '100vw', // Set the height to fill the screen
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center', // Center content vertically
+      alignItems: 'center', // Center content horizontally
+    }}>
+      <div style={{
+        marginBottom: '20px', // Space between the text and buttons
+        padding: '10px', // Padding inside the white boxes
+        backgroundColor: 'white', // Background color for the text
+        minWidth: '50vh',
+        borderRadius: '10px', // Curved corners
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.1)', // Optional: adds a subtle shadow
+      }}>
+        <p>Current Arabic: <p style={{ fontSize: '30px' }}>{generatedSentence.arabic}</p></p>
+        <p>Current English: {generatedSentence.english}</p>
       </div>
-      <button id="playButton" onClick={() => play()}>Play</button>
-      <button id="pauseButton" onClick={() => stop()}>Pause</button>
-      {/* Display the generated sentence */}
-    <p style={{ fontSize: '30px' }}>{generatedSentence.arabic}</p>
-    <p style={{ fontSize: '20px' }}>{generatedSentence.english}</p>
+      <div>
+        <button id="playButton" onClick={() => play()} style={buttonStyle}>Play</button>
+        <button id="pauseButton" onClick={() => stop()} style={buttonStyle}>Pause</button>
+      </div>
     </div>
   );
+
 };
 
 export default App;
